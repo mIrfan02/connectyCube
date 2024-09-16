@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call with ConnectyCube</title>
+    <script src="https://cdn.jsdelivr.net/npm/connectycube@3.33.2/dist/connectycube.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #videoContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        video {
+            width: 380px;
+            height: 270px;
+            background-color: black;
+            border: 1px solid #ccc;
+        }
+
+        #callControls {
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #userList {
+            margin-top: 20px;
+        }
+
+        #userList ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #userList li {
+            padding: 10px;
+            background-color: #fff;
+            margin-bottom: 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #userList button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .modal {
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+    </style>
+</head>
+<body>
+    <h1>Calling Page</h1>
+
+    <div id="videoContainer">
+        <div>
+            <h3> Video Call</h3>
+            <video id="localVideo" autoplay playsinline muted></video>
+
+        </div>
+    </div>
+
+    <div id="callControls">
+        <button id="startCall" class="startCall">Start Call</button>
+        <button id="endCall">End Call</button>
+    </div>
+
+    <div id="userList">
+        <h2>Available Users</h2>
+        <label for="select-425" id="select-doc" class="doc-bg-color select-user">
+            <span>doctor</span>
+            <input type="checkbox" id="select-425" class="select-user-checkbox" data-id="425">
+        </label>
+
+        <label for="select-426" id="select-pet" class="pet-bg-color select-user">
+            <span>patient</span>
+            <input type="checkbox" id="select-426" class="select-user-checkbox" data-id="426">
+        </label>
+    </div>
+    
+    <div id="callModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p>Incoming call from <span id="callerName">User</span></p>
+            <button id="acceptCall">Accept</button>
+            <button id="rejectCall">Reject</button>
+        </div>
+    </div>
+
+
+    {{-- Laravel's compiled JS assets --}}
+    @vite(['resources/js/app.js'])
+    <script language="JavaScript" type="module">
+        // Initialize ConnectyCube SDK
+        const ConnectyCube = window.ConnectyCube;
+        const CREDENTIALS = {
+            appId: 7929,
+            authKey: "LZLbYfF4wVpbgJb",
+            authSecret: "2kRNSCHhVTTaxqj",
+        };
+    
+        ConnectyCube.init(CREDENTIALS);
+    
+        const userCredentials = { userId: "12683887", password: "aqsa1234" };
+    
+        // Create a session and log in
+        ConnectyCube.createSession()
+            .then((session) => {
+                console.log("Session created:", session);
+            
+                const sessionToken = session.token;
+   
+                // Define userProfile
+                const userProfile = {
+                    login: "aqsa",
+                    password: "aqsa1234",
+                    email: "aqsa@gmail.com",
+                    full_name: "aqsa",
+                    phone: "47802323148",
+                    website: "https://dozensofdreams.com",
+                    tag_list: ["iphone", "apple"],
+                    custom_data: JSON.stringify({ middle_name: "Bartoleo" }),
+                };
+   
+                // Uncomment to signup user
+                // return ConnectyCube.users.signup(userProfile, {
+                //     headers: {
+                //         'Authorization': `Bearer ${sessionToken}`,
+                //         'Content-Type': 'application/json',
+                //     }
+                // });
+   
+                // Ensure session token is valid
+                return ConnectyCube.chat.connect(userCredentials);
+            })
+            .then((user) => {
+                console.log("User logged in successfully", user);
+   
+                // Set up the button click event to start the video call
+                  // startVideoCall(user); 
+            
+            })
+            .catch((error) => {
+                console.error("Error during session creation or user login:", error);
+            });
+    
+            function startCall(callType) {
+    const options = {};
+    const opponents = [];
+    const opponentsIds = [];
+
+    // Collect selected users from checkboxes
+    document.querySelectorAll(".select-user-checkbox").forEach(($checkbox) => {
+        if ($checkbox.checked) {
+            const id = +$checkbox.dataset.id;
+            opponents.push({ id });
+            opponentsIds.push(id);
+            $checkbox.checked = false;
+        }
+    });
+
+    if (opponents.length > 0) {
+        // Create the video session
+        const session = ConnectyCube.videochat.createNewSession(opponentsIds, callType, options);
+
+        const mediaOptions = { video: true, audio: true };
+        if (callType === ConnectyCube.videochat.CallType.AUDIO) {
+            delete mediaOptions.video;
+        }
+
+        navigator.mediaDevices.getUserMedia(mediaOptions)
+            .then((stream) => {
+                console.log("Media stream obtained", stream);
+
+                // Play local video stream
+                const localVideo = document.getElementById("localVideo");
+                if (localVideo) {
+                    localVideo.srcObject = stream;
+                    localVideo.onloadedmetadata = () => {
+                        localVideo.play();
+                    };
+                } else {
+                    console.error("Local video element not found");
+                }
+
+                session.getUserMedia(mediaOptions).then((sessionStream) => {
+                    // Handle remote media stream if necessary
+                    session.call({});
+                }).catch((error) => {
+                    console.error("Error getting user media for the session:", error);
+                });
+            })
+            .catch((error) => {
+                console.error("Error obtaining media stream:", error);
+            });
+    } else {
+        alert("Select at least one user to start the video call");
+    }
+}
+
+// Attach event listeners after page loads
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById("startCall").addEventListener("click", function () {
+        startCall(ConnectyCube.videochat.CallType.VIDEO);
+    });
+});
+
+        // function startVideoCall() {
+        //     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        //         .then((stream) => {
+        //             console.log("Media stream obtained", stream);
+   
+        //             const videoElement = document.querySelector('video');
+        //             if (videoElement) {
+        //                 videoElement.srcObject = stream;
+        //                 videoElement.onloadedmetadata = () => {
+        //                     videoElement.play();
+        //                 };
+        //             } else {
+        //                 console.error("Video element not found");
+        //             }
+   
+        //             // Define callees' IDs and session options
+        //             const calleesIds = ["12683887"]; // Example user IDs
+        //             const sessionType = ConnectyCube.videochat.CallType.VIDEO;
+        //             const additionalOptions = {};
+        //             console.log(calleesIds, sessionType, additionalOptions);
+   
+        //             // Create a new video session
+        //             return ConnectyCube.videochat.createNewSession(calleesIds, sessionType, additionalOptions);
+        //         })
+        //         .then((session) => {
+        //             console.log("Session object:", session);
+        //             if (!session || !session.call || !session.stop) {
+        //                 throw new Error("Invalid session object. Check if session methods are available.");
+        //             }
+   
+        //             console.log("Video session created successfully", session);
+   
+        //             // Add code here to handle the created session, e.g., making the call
+        //             session.call({});
+        //         })
+        //         .catch((error) => {
+        //             console.error("Error obtaining media stream or creating session:", error);
+        //             alert("Error: " + error.message);
+        //         });
+        // }
+   </script>
+       <script>
+        // Get elements
+        const modal = document.getElementById('callModal');
+        const closeModal = document.getElementById('closeModal');
+        const acceptCall = document.getElementById('acceptCall');
+        const rejectCall = document.getElementById('rejectCall');
+
+        // Function to show the modal
+        function showIncomingCallModal(callerName) {
+            document.getElementById('callerName').textContent = callerName;
+            modal.style.display = 'block';
+        }
+
+        // Function to hide the modal
+        function hideIncomingCallModal() {
+            modal.style.display = 'none';
+        }
+
+        // Add event listener for the close button
+        closeModal.addEventListener('click', function() {
+            hideIncomingCallModal();
+        });
+
+        // Add event listener for the accept call button
+        acceptCall.addEventListener('click', function() {
+            onAcceptCallListener(session, userId, extension);
+            hideIncomingCallModal();
+        });
+
+        // Add event listener for the reject call button
+        rejectCall.addEventListener('click', function() {
+            // Handle call rejection if needed
+            hideIncomingCallModal();
+        });
+
+        // Example of onAcceptCallListener function
+        function onAcceptCallListener(session, userId, extension) {
+            if (userId === session.currentUserID) {
+                if (modal.style.display === 'block') {
+                    // Reset session and handle UI updates
+                    session = null;
+                    hideIncomingCallModal();
+                    showSnackbar("You have accepted the call on the other side");
+                }
+                return false;
+            } else {
+                const userName = getUserById(userId, "name");
+                const infoText = `${userName} has accepted the call`;
+                showSnackbar(infoText);
+                // Pause dialing sound or animation if needed
+            }
+        }
+
+        // Example of showSnackbar function
+        function showSnackbar(message) {
+            // Implement your snackbar display logic here
+            console.log(message);
+        }
+
+        // Mock function to simulate getting a user's name by ID
+        function getUserById(userId, field) {
+            // Replace this with actual user lookup logic
+            return "John Doe"; // Placeholder name
+        }
+
+        // Example session and userId for testing
+        const session = { currentUserID: 1 }; // Replace with actual session data
+        const userId = 2; // Replace with actual userId
+        const extension = null; // Replace with actual extension if needed
+
+        // Simulate an incoming call to show the modal
+        showIncomingCallModal("Jane Doe");
+    </script>
+    
+   
+</body>
+</html>
